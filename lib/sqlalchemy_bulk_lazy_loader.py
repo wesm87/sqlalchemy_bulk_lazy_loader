@@ -138,7 +138,7 @@ class BulkLazyLoader(LazyLoader):
         if value is not None or ident is None:
             self._unsupported_relation()
 
-    def _emit_lazyload(self, session, state, ident_key, passive):
+    def _emit_lazyload(self, session, state, _primary_key_identity, passive, _loadopt):
         """
         This is the main method from LazyLoader we need to overwrite. Unfortunately I don't think there's
         a clean way to add bulk functionality without partially copy/pasting from LazyLoader#_emit_lazyload
@@ -176,11 +176,13 @@ class BulkLazyLoader(LazyLoader):
         parent_mapper = self.parent_property.parent
         current_model = state.obj()
         # Find all models in this session that also need this same relationship to be populated
-        similar_models = self._get_similar_unpopulated_models(current_model, session)
+        similar_models = self._get_similar_unpopulated_models(
+            current_model, session)
         param_value_to_models = {}
         param_values = set()
         for model in similar_models:
-            value = self._get_model_value(model, col=self._ident, mapper=parent_mapper, passive=passive)
+            value = self._get_model_value(
+                model, col=self._ident, mapper=parent_mapper, passive=passive)
             param_value_to_models[value] = param_value_to_models.get(value, [])
             param_value_to_models[value].append(model)
             param_values.add(value)
@@ -202,10 +204,12 @@ class BulkLazyLoader(LazyLoader):
         for result in results:
             # we selected from both the model table and join col, so results are tuples of (model, join_col_value)
             (result_model, join_col_value) = result
-            param_value_to_results[join_col_value] = param_value_to_results.get(join_col_value, [])
+            param_value_to_results[join_col_value] = param_value_to_results.get(
+                join_col_value, [])
             param_value_to_results[join_col_value].append(result_model)
 
-        current_model_result = self._set_results_on_models(param_value_to_results, param_value_to_models, current_model)
+        current_model_result = self._set_results_on_models(
+            param_value_to_results, param_value_to_models, current_model)
         # The loader expects us to return the related models for the model in question. We return that here to maintain
         # the LazyLoader interface, even though we already set all the relationships on all models directly above
         return current_model_result
